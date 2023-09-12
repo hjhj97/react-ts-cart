@@ -1,4 +1,5 @@
 import React, { ReactNode, createContext, useContext, useState } from "react";
+import ShoppingCart from "../components/ShoppingCart";
 
 type ShoppingCartProviderProps = {
   children: ReactNode;
@@ -10,10 +11,14 @@ type CartItem = {
 };
 
 type ShoppingCartContext = {
+  openCart: () => void;
+  closeCart: () => void;
   getItemQuantity: (id: number) => number;
   increaseCartQuantity: (id: number) => void;
   decreaseCartQuantity: (id: number) => void;
   removeFromCart: (id: number) => void;
+  cartQuantity: number;
+  cartItems: CartItem[];
 };
 
 const ShoppingCartContext = createContext({} as ShoppingCartContext);
@@ -21,13 +26,19 @@ const ShoppingCartContext = createContext({} as ShoppingCartContext);
 export const useShoppingCart = () => useContext(ShoppingCartContext);
 
 function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
-  const [quantity, setQuantity] = useState<CartItem[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+
+  const openCart = () => setIsOpen(true);
+  const closeCart = () => setIsOpen(false);
+
+  const cartQuantity = cartItems.reduce((acc, cur) => acc + cur.quantity, 0);
 
   function getItemQuantity(id: number) {
-    return quantity.find((item) => item.id === id)?.quantity || 0;
+    return cartItems.find((item) => item.id === id)?.quantity || 0;
   }
   function increaseCartQuantity(id: number) {
-    setQuantity((currItems) => {
+    setCartItems((currItems) => {
       if (currItems.find((item) => item.id === id) == null) {
         return [...currItems, { id, quantity: 1 }];
       } else {
@@ -42,7 +53,7 @@ function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
     });
   }
   function decreaseCartQuantity(id: number) {
-    setQuantity((currItems) => {
+    setCartItems((currItems) => {
       if (currItems.find((item) => item.id === id)?.quantity === 1) {
         return currItems.filter((item) => item.id !== id);
       } else {
@@ -57,16 +68,26 @@ function ShoppingCartProvider({ children }: ShoppingCartProviderProps) {
     });
   }
   function removeFromCart(id: number) {
-    setQuantity((currItems) => {
+    setCartItems((currItems) => {
       return currItems.filter((item) => item.id !== id);
     });
   }
 
   return (
     <ShoppingCartContext.Provider
-      value={{ getItemQuantity, decreaseCartQuantity, increaseCartQuantity, removeFromCart }}
+      value={{
+        getItemQuantity,
+        decreaseCartQuantity,
+        increaseCartQuantity,
+        removeFromCart,
+        openCart,
+        closeCart,
+        cartQuantity,
+        cartItems,
+      }}
     >
       {children}
+      <ShoppingCart isOpen={isOpen} />
     </ShoppingCartContext.Provider>
   );
 }
